@@ -1,4 +1,4 @@
-![Mirror Replicator Logo](https://github.com/gscafo78/mirep/blob/main/img/mirrorreplicator.jpeg)
+<img src="https://github.com/gscafo78/mirep/blob/main/img/mirrorreplicator.jpeg" alt="Mirror Replicator Logo" width="30" height="30">
 
 # Mirror Replicator
 
