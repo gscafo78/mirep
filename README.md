@@ -1,4 +1,4 @@
-<img src="https://github.com/gscafo78/mirep/blob/main/img/mirrorreplicator.jpeg" alt="Mirror Replicator Logo" width="30" height="30">
+<img src="https://github.com/gscafo78/mirep/blob/main/img/mirrorreplicator.jpeg" alt="Mirror Replicator Logo" width="300" height="300">
 
 # Mirror Replicator
 
