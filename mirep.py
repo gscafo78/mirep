@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 import gzip
 import shutil
+import sys
 
 
 '''
@@ -522,11 +523,16 @@ def main():
   # Create an instance of RepositoryManage with the parsed arguments
   mirror = RepositoryManage(args)
   
-  # Check if the remove flag is set and call the appropriate method
-  if mirror.args.remove:
-      mirror.remove_repository()
-  else:
-      mirror.mirror_repository()
+  try:
+      # Check if the remove flag is set and call the appropriate method
+      if mirror.args.remove:
+          mirror.remove_repository()
+      else:
+          mirror.mirror_repository()
+  except KeyboardInterrupt:
+      # Handle Ctrl+C gracefully
+      print("\nOperation cancelled by user.")
+      sys.exit(0)
 
 if __name__ == "__main__":
   main()
