@@ -8,18 +8,21 @@ from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 import gzip
+import shutil
+
 
 '''
 @author: Giovanni SCAFETTA
-@version: 0.1.5
+@version: 0.1.6
 @description: This script is realized to clone an on line mirror of a Debian/Ubuntu repository to create your local repository.
 @usage: python3 mirep.py -u <url> -p <protocol> -r <rootpath> -d <distributions> -c <components> -a <architectures> -i <inpath> -t <threads> -v
-@example: python3 mirep.py -uftp.debian.org/debian -p http -r /home/user/debian -d bullseye -c main -a amd64 -i debian -t 4 -v
+@example: python3 mirep.py -u ftp.debian.org/debian -p http -r /home/user/debian -d bullseye -c main -a amd64 -i debian -t 4 -v
 @license: MIT
 '''
 
 
-VERSION = "0.1.5"
+
+VERSION = "0.1.6"
 
 class Logger:
   @staticmethod
@@ -91,8 +94,12 @@ class Downloader:
           logging.debug(f"File '{file_name}' downloaded successfully.")
           self.downloaded_files.append(full_path)  # Add to the list
           self.downloaded_count += 1  # Increment downloaded count
-      except requests.exceptions.RequestException as e:
-          logging.error(f"Failed to download the file: {e}")
+      
+      except requests.exceptions.HTTPError as e:
+        if response.status_code == 404:
+            logging.error(f"Failed to download the file: {e}")
+        else:
+            logging.error(f"An error occurred: {e}")    
 
 
   def _add_downloaded_files_from_directory(self, path):
@@ -232,7 +239,8 @@ class FileManager:
             print(f"Error deleting {file_path}: {e}")
 
 
-class RepositoryMirror:
+class RepositoryMManage:
+
   def __init__(self, args):
       self.args = args
       self.downloader = Downloader(args.proto, args.url, self.args.rootpath)
@@ -242,9 +250,6 @@ class RepositoryMirror:
 
       file_list = FileManager.list_files_recursive(f"{self.args.rootpath}/{self.args.url}")
       logging.debug(f"Files in root path before filtering: {file_list}")
-
-      common_path = f"{self.args.url}/{self.args.inpath}/indices/"
-      self.downloader.download_directory(common_path)
 
       futures = []  # Maintain a single futures list
       with ThreadPoolExecutor(max_workers=self.args.threads) as executor:
@@ -280,7 +285,61 @@ class RepositoryMirror:
       for future in as_completed(futures):
           future.result()
 
+      link_list.extend(self.downloader.get_downloaded_files())
       
+      logging.debug(f"Stored {len(file_list)} files.")
+      
+      logging.debug(f"link_list {len(link_list)}")
+      file_list = [item for item in file_list if item not in link_list]
+      
+      logging.debug(f"Da rimuovere {file_list}")
+      logging.debug(f"Differenza {len(file_list)}")
+  
+  
+  def remove_repository(self):
+    
+    file_list = []
+    for distribution in self.args.distributions:
+        for component in self.args.components:
+            for arch in self.args.architectures:
+                save_path =f"{self.args.rootpath}/{self.args.url}/{self.args.inpath}/dists/{distribution}/{component}/binary-{arch}/"
+                pack_files = FileManager.list_files_in_folder(save_path)
+                packages_info = PackageHandler.find_and_extract_packages(pack_files)
+                logging.debug(f"Pages Info: {len(packages_info)}")
+                for index, package in enumerate(packages_info, start=1):
+                    logging.debug(f"Serial Number: {index}")
+                    logging.debug(f"Package: {package.get('Package')}")
+                    logging.debug(f"Version: {package.get('Version')}")
+                    logging.debug(f"Description: {package.get('Description')}")
+                    logging.debug(f"Filename: {package.get('Filename')}")
+                    file_list.append(f"{self.args.rootpath}/{self.args.url}/{self.args.inpath}/{package.get('Filename')}")
+
+    print(f"{len(file_list)} files to erase. Continue? (y/N)")
+    # Capture and validate user input
+    user_input = input().strip().lower()  # Convert input to lowercase for easier comparison
+
+    # Default behavior is 'n'
+    if user_input not in ['y', 'n']:
+        user_input = 'n'
+
+    # Proceed based on user input
+    if user_input == 'y':
+        # Code to delete the files
+        for file_path in file_list:
+            try:
+                logging.info(f"Deleteing: {file_path}")
+                os.remove(file_path)
+            except FileNotFoundError:
+                print(f"File not found: {file_path}")
+            except PermissionError:
+                print(f"Permission denied: {file_path}")
+            except Exception as e:
+                print(f"Error deleting {file_path}: {e}")
+        # Remove Folder
+        shutil.rmtree(f"{self.args.rootpath}/{self.args.url}/{self.args.inpath}/dists/{distribution}")
+    else:
+        print("Operation cancelled.")
+                    
 
 def main():
   parser = argparse.ArgumentParser(description="Mirror a Debian/Ubuntu repository.")
@@ -292,6 +351,7 @@ def main():
   parser.add_argument("--architectures", required=True, nargs='+', help="List of architectures (e.g., amd64 i386 arm64 armel armhf ppc64el s390x riscv64)")
   parser.add_argument("--rootpath", required=True, help="Local root path to save files (e.g, /var/www/html/apt)")
   parser.add_argument("--threads", type=int, default=5, help="Number of threads to use (default: 5)")
+  parser.add_argument("--remove", action='store_true', help="Remove local rapository")
   parser.add_argument("--verbose", action='store_true', help="Verbose mode")
   parser.add_argument("--version", action='version', version=f"%(prog)s {VERSION}")
 
@@ -303,8 +363,11 @@ def main():
       return
 
   Logger.setup_logging(args.verbose)
-  mirror = RepositoryMirror(args)
-  mirror.mirror_repository()
+  mirror = RepositoryMManage(args)
+  if mirror.args.remove:
+      mirror.remove_repository()
+  else:
+      mirror.mirror_repository()
 
 if __name__ == "__main__":
   main()
