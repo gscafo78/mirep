@@ -14,7 +14,7 @@ import sys
 
 '''
 @author: Giovanni SCAFETTA
-@version: 0.1.6
+@version: 0.1.7
 @description: This script is realized to clone an on line mirror of a Debian/Ubuntu repository to create your local repository.
 @usage: python3 mirep.py -u <url> -p <protocol> -r <rootpath> -d <distributions> -c <components> -a <architectures> -i <inpath> -t <threads> -v
 @example: python3 mirep.py -u ftp.debian.org/debian -p http -r /home/user/debian -d bullseye -c main -a amd64 -i debian -t 4 -v
@@ -23,7 +23,7 @@ import sys
 
 
 
-VERSION = "0.1.6"
+VERSION = "0.1.7"
 
 import logging
 
