@@ -17,13 +17,13 @@ import sys
 @version: 0.1.7
 @description: This script is realized to clone an on line mirror of a Debian/Ubuntu repository to create your local repository.
 @usage: python3 mirep.py -u <url> -p <protocol> -r <rootpath> -d <distributions> -c <components> -a <architectures> -i <inpath> -t <threads> -v
-@example: python3 mirep.py -u ftp.debian.org/debian -p http -r /home/user/debian -d bullseye -c main -a amd64 -i debian -t 4 -v
+@example: python3 mirep.py -u ftp.debian.org/debian -p http -r /home/user/debian -d bookworm bookworm-updates -c main -a amd64 -i debian -t 4 -v
 @license: GLPv3
 '''
 
 
 
-VERSION = "0.1.7"
+VERSION = "0.1.8"
 
 import logging
 
@@ -378,8 +378,8 @@ class RepositoryManage:
         link_list = []
 
         # List all files in the root path before filtering
-        file_list = FileManager.list_files_recursive(f"{self.args.rootpath}/{self.args.url}")
-        logging.debug(f"Files in root path before filtering: {file_list}")
+        # file_list = FileManager.list_files_recursive(f"{self.args.rootpath}/{self.args.url}")
+        # logging.debug(f"Files in root path before filtering: {file_list}")
 
         futures = []  # Maintain a single futures list
         with ThreadPoolExecutor(max_workers=self.args.threads) as executor:
@@ -437,9 +437,9 @@ class RepositoryManage:
             future.result()
 
         # Extend the link list with downloaded files
-        link_list.extend(self.downloader.get_downloaded_files())
-        logging.debug(f"Stored {len(file_list)} files.")
-        logging.debug(f"link_list {len(link_list)}")
+        # link_list.extend(self.downloader.get_downloaded_files())
+        # logging.debug(f"Stored {len(file_list)} files.")
+        # logging.debug(f"link_list {len(link_list)}")
 
     def remove_repository(self):
         """
