@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import argparse
 import requests
 import os
@@ -14,7 +16,7 @@ import sys
 
 '''
 @author: Giovanni SCAFETTA
-@version: 0.1.7
+@version: 0.1.8
 @description: This script is realized to clone an on line mirror of a Debian/Ubuntu repository to create your local repository.
 @usage: python3 mirep.py -u <url> -p <protocol> -r <rootpath> -d <distributions> -c <components> -a <architectures> -i <inpath> -t <threads> -v
 @example: python3 mirep.py -u ftp.debian.org/debian -p http -r /home/user/debian -d bookworm bookworm-updates -c main -a amd64 -i debian -t 4 -v
@@ -431,15 +433,17 @@ class RepositoryManage:
                                 filesave,
                                 False
                             ))
+        
 
         # Wait for all download tasks to complete
         for future in as_completed(futures):
             future.result()
+        logging.debug(f"Mirror cloned successfully.") 
 
         # Extend the link list with downloaded files
-        # link_list.extend(self.downloader.get_downloaded_files())
+        link_list.extend(self.downloader.get_downloaded_files())
         # logging.debug(f"Stored {len(file_list)} files.")
-        # logging.debug(f"link_list {len(link_list)}")
+        logging.debug(f"link_list {len(link_list)}")
 
     def remove_repository(self):
         """
