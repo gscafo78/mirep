@@ -5,6 +5,7 @@ Mirror Replicator
 ![Visitor Count](https://visitor-badge.laobi.icu/badge?page_id=gscafo78.mirep)
 [![License: GPL](https://img.shields.io/badge/License-GPL-blue.svg)](https://github.com/gscafo78/mirep/blob/main/LICENSE)
 ![Python Version](https://img.shields.io/badge/Python-3.11.2-blue)
+[![Email](https://img.shields.io/badge/Email-giovanni.scafetta@gmx.com-blue)](mailto:giovanni.scafetta@gmx.com)
 
 
 **Mirror Replicator** is a robust script designed to download and create local mirrors of Debian and Ubuntu repositories. This tool ensures reliable and fast access to package updates by maintaining a local copy of the repositories, reducing dependency on external network speeds and availability.
