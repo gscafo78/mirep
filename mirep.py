@@ -18,7 +18,7 @@ from datetime import datetime
 
 '''
 @author: Giovanni SCAFETTA
-@version: 0.1.9
+@version: 0.1.10
 @description: This script is realized to clone an on line mirror of a Debian/Ubuntu repository to create your local repository.
 @usage: python3 mirep.py -u <url> -p <protocol> -r <rootpath> -d <distributions> -c <components> -a <architectures> -i <inpath> -t <threads> -v
 @example: python3 mirep.py -u ftp.debian.org/debian -p http -r /home/user/debian -d bookworm bookworm-updates -c main -a amd64 -i debian -t 4 -v
@@ -27,7 +27,7 @@ from datetime import datetime
 
 
 
-VERSION = "0.1.9"
+VERSION = "0.1.10"
 
 
 class Logger:
