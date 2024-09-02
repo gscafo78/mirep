@@ -12,11 +12,11 @@ from tqdm import tqdm
 import gzip
 import shutil
 import sys
-
+import hashlib
 
 '''
 @author: Giovanni SCAFETTA
-@version: 0.1.8
+@version: 0.1.9
 @description: This script is realized to clone an on line mirror of a Debian/Ubuntu repository to create your local repository.
 @usage: python3 mirep.py -u <url> -p <protocol> -r <rootpath> -d <distributions> -c <components> -a <architectures> -i <inpath> -t <threads> -v
 @example: python3 mirep.py -u ftp.debian.org/debian -p http -r /home/user/debian -d bookworm bookworm-updates -c main -a amd64 -i debian -t 4 -v
@@ -25,9 +25,8 @@ import sys
 
 
 
-VERSION = "0.1.8"
+VERSION = "0.1.9"
 
-import logging
 
 class Logger:
   @staticmethod
@@ -94,7 +93,33 @@ class Downloader:
           else:
               logging.error(f"An error occurred: {e}")
 
-  def download_file(self, path, full_path, overwrite=False):
+  @staticmethod
+  def verify_file_hash(file_path, hash_string):
+    """
+    Verifies if the SHA-256 hash of the file matches the provided hash string.
+    param file_path: Path to the file.
+    :param hash_string: SHA-256 hash string to compare against.
+    :return: True if the file's hash matches the provided hash string, False otherwise.
+    """
+    sha256 = hashlib.sha256()
+    try:
+        with open(file_path, "rb") as file:
+            while chunk := file.read(8192):
+                sha256.update(chunk)
+        
+        file_hash = sha256.hexdigest()
+        
+        return file_hash == hash_string
+    except FileNotFoundError:
+        print(f"File not found: {file_path}")
+        return False
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
+
+
+
+  def download_file(self, path, full_path, hash_string=None):
       """
       Downloads a single file from the specified path.
 
@@ -109,10 +134,14 @@ class Downloader:
           logging.debug(f"Created directory: {folder}")
 
       file_name = os.path.basename(full_path)
-      if os.path.exists(full_path) and not overwrite:
-          logging.debug(f"File '{file_name}' already exists. Skipping download.")
-          self.skipped_count += 1  # Increment skipped count
-          return
+      if os.path.exists(full_path) and hash_string is not None:
+    #   if os.path.exists(full_path) and not overwrite:
+          if Downloader.verify_file_hash(full_path, hash_string):
+            logging.debug(f"File '{file_name}' already exists. Skipping download.")
+            self.skipped_count += 1  # Increment skipped count
+            return
+          else:
+              logging.info(f"File '{file_name}' already exists but hash does not match. Overwriting.")
 
       try:
           # Request the file from the URL
@@ -299,6 +328,8 @@ class PackageHandler:
       return packages
 
 class FileManager:
+  
+
   @staticmethod
   def list_files_recursive(folder_path):
       """
@@ -392,8 +423,7 @@ class RepositoryManage:
                     futures.append(executor.submit(
                         self.downloader.download_file,
                         f"{self.args.proto}://{common_path}",
-                        f"{self.args.rootpath}/{common_path}",
-                        True
+                        f"{self.args.rootpath}/{common_path}"
                     ))
 
                 for component in self.args.components:
@@ -407,8 +437,7 @@ class RepositoryManage:
                         futures.append(executor.submit(
                             self.downloader.download_file,
                             f"{self.args.proto}://{common_path}",
-                            f"{self.args.rootpath}/{common_path}",
-                            True
+                            f"{self.args.rootpath}/{common_path}"
                         ))
                         self.downloader.download_directory(f"{self.args.url}/{self.args.inpath}/dists/{distribution}/{component}/binary-{arch}/")
                         self.downloader.download_directory(f"{self.args.url}/{self.args.inpath}/dists/{distribution}/{component}/debian-installer/binary-{arch}/")
@@ -424,15 +453,23 @@ class RepositoryManage:
                             logging.debug(f"Version: {package.get('Version')}")
                             logging.debug(f"Description: {package.get('Description')}")
                             logging.debug(f"Filename: {package.get('Filename')}")
+                            logging.debug(f"SHA256: {package.get('SHA256')}")
                             downloadlink = f"{self.args.proto}://{self.args.url}/{self.args.inpath}/{package.get('Filename')}"
                             filesave = f"{self.args.rootpath}/{self.args.url}/{self.args.inpath}/{package.get('Filename')}"
                             link_list.append(filesave)
-                            futures.append(executor.submit(
-                                self.downloader.download_file,
-                                downloadlink,
-                                filesave,
-                                False
-                            ))
+                            if self.args.hash:
+                                futures.append(executor.submit(
+                                    self.downloader.download_file,
+                                    downloadlink,
+                                    filesave,
+                                    package.get('SHA256'),
+                                ))
+                            else:
+                                futures.append(executor.submit(
+                                    self.downloader.download_file,
+                                    downloadlink,
+                                    filesave,
+                                ))
         
 
         # Wait for all download tasks to complete
@@ -508,6 +545,7 @@ def main():
   parser.add_argument("--architectures", required=True, nargs='+', help="List of architectures (e.g., amd64 i386 arm64 armel armhf ppc64el s390x riscv64)")
   parser.add_argument("--rootpath", required=True, help="Local root path to save files (e.g, /var/www/html/apt)")
   parser.add_argument("--threads", type=int, default=5, help="Number of threads to use (default: 5)")
+  parser.add_argument("--hash", action='store_true', help="If the file is already downloaded, check the hash")
   parser.add_argument("--remove", action='store_true', help="Remove local repository")
   parser.add_argument("--verbose", action='store_true', help="Verbose mode")
   parser.add_argument("--version", action='version', version=f"%(prog)s {VERSION}")
