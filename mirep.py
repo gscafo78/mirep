@@ -140,7 +140,7 @@ class Downloader:
             logging.debug(f"File '{file_name}' already exists. Skipping download.")
             self.skipped_count += 1  # Increment skipped count
             return
-          else:
+          elif hash_string != " True" :
               logging.info(f"File '{file_name}' already exists but hash does not match. Overwriting.")
 
       try:
@@ -164,7 +164,7 @@ class Downloader:
       
       except requests.exceptions.HTTPError as e:
           if response.status_code == 404:
-              logging.error(f"Failed to download the file: {e}")
+              logging.debug(f"Failed to download the file: {e}")
           else:
               logging.error(f"An error occurred: {e}")
 
